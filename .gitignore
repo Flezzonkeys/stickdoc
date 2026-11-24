@@ -1,0 +1,5 @@
+StickDoc/Reports/*
+!StickDoc/Reports/.keep
+StickDoc/tools/*.exe
+StickDoc/tools/*.dll
+*.zip

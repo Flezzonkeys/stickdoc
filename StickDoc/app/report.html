@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StickDoc Report</title>
+<style>
+:root {
+  --bg: #f2f3f5; --surface: #ffffff; --surface-2: #f6f7f9; --border: #d5d9df; --text: #1d2125; --muted: #5d646d;
+  --accent: #2f6fca; --ok: #1f8f3a; --warn: #b87400; --fail: #cf2e25; --info: #2f6fca;
+  --ok-bg: #e5f4e8; --warn-bg: #fdf1dc; --fail-bg: #fbe3e1; --info-bg: #e3edfa; --track: #e3e6ea;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b1e22; --surface: #24282d; --surface-2: #2a2e34; --border: #3a3f46; --text: #e6e8eb; --muted: #9aa1aa;
+    --accent: #58a6ff; --ok: #3fb950; --warn: #e3b341; --fail: #f85149; --info: #58a6ff;
+    --ok-bg: #1e3326; --warn-bg: #3a3122; --fail-bg: #3d2222; --info-bg: #1f2e44; --track: #353a41;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1b1e22; --surface: #24282d; --surface-2: #2a2e34; --border: #3a3f46; --text: #e6e8eb; --muted: #9aa1aa;
+  --accent: #58a6ff; --ok: #3fb950; --warn: #e3b341; --fail: #f85149; --info: #58a6ff;
+  --ok-bg: #1e3326; --warn-bg: #3a3122; --fail-bg: #3d2222; --info-bg: #1f2e44; --track: #353a41;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+.wrap { max-width: 1400px; margin: 0 auto; padding: 16px; }
+button { font: inherit; color: inherit; }
+
+/* header */
+.top { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 20px; }
+.top.s-warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
+.top.s-fail { background: var(--fail-bg); border-color: color-mix(in srgb, var(--fail) 45%, var(--border)); }
+.top.s-ok { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 45%, var(--border)); }
+.big { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; flex: none; color: #fff; }
+.big svg { width: 30px; height: 30px; }
+.s-ok .big { background: var(--ok); } .s-warn .big { background: var(--warn); } .s-fail .big { background: var(--fail); }
+.head { flex: 1 1 320px; min-width: 0; }
+.head h1 { margin: 0 0 2px; font-size: 24px; font-weight: 650; }
+.s-ok .head h1 { color: var(--ok); } .s-warn .head h1 { color: var(--warn); } .s-fail .head h1 { color: var(--fail); }
+.meta { font-weight: 600; }
+.sub { color: var(--muted); }
+.actions { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.chip { border-radius: 999px; padding: 1px 10px; font-size: 12px; font-weight: 650; border: 1px solid currentColor; }
+.c-ok { color: var(--ok); background: var(--ok-bg); } .c-warn { color: var(--warn); background: var(--warn-bg); }
+.c-fail { color: var(--fail); background: var(--fail-bg); } .c-info { color: var(--info); background: var(--info-bg); }
+
+.flags { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.flag { display: flex; gap: 10px; align-items: baseline; border-radius: 8px; padding: 8px 12px; border: 1px solid var(--border); background: var(--surface); }
+.flag b { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; flex: none; }
+.flag.l-warn b { color: var(--warn); } .flag.l-fail b { color: var(--fail); } .flag.l-info b { color: var(--info); }
+
+/* layout */
+main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 40%); gap: 14px; margin-top: 14px; align-items: start; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.card { position: relative; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 14px 12px 18px; cursor: pointer; min-height: 96px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--st); }
+.card:hover { border-color: var(--accent); }
+.card.sel { outline: 2px solid var(--accent); outline-offset: -1px; }
+.card.st-ok { --st: var(--ok); } .card.st-warn { --st: var(--warn); background: color-mix(in srgb, var(--warn-bg) 55%, var(--surface)); }
+.card.st-fail { --st: var(--fail); background: color-mix(in srgb, var(--fail-bg) 55%, var(--surface)); } .card.st-info { --st: var(--info); }
+.ch { display: flex; align-items: center; gap: 10px; }
+.ico { width: 22px; height: 22px; flex: none; color: var(--st); }
+.ch .t { font-weight: 650; font-size: 15px; flex: 1; }
+.badge { font-size: 11px; font-weight: 700; border-radius: 6px; padding: 2px 8px; border: 1px solid currentColor; flex: none; }
+.sum { color: var(--muted); overflow-wrap: anywhere; }
+.bars { display: flex; flex-direction: column; gap: 4px; margin-top: auto; }
+.bar { height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
+.bar i.warn { background: var(--warn); } .bar i.fail { background: var(--fail); }
+.inline { display: none; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; cursor: auto; }
+body.expanded .inline, .card.open .inline { display: block; }
+
+.panel { position: sticky; top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px;
+  max-height: calc(100vh - 24px); overflow: auto; }
+body.expanded .panel { display: none; }
+body.expanded main { grid-template-columns: 1fr; }
+.panel .ph { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.panel .ph h2 { margin: 0; font-size: 19px; flex: 1; }
+.panel .ph .ico { width: 28px; height: 28px; }
+.st-ok { --st: var(--ok); } .st-warn { --st: var(--warn); } .st-fail { --st: var(--fail); } .st-info { --st: var(--info); }
+.empty { color: var(--muted); }
+
+/* details */
+.det .lead { margin: 0 0 10px; font-weight: 600; }
+.gl { display: grid; grid-template-columns: 90px 1fr 48px; gap: 8px; align-items: center; margin: 4px 0; font-size: .93em; }
+.gl .v { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lines { display: flex; flex-direction: column; gap: 3px; }
+.kv { display: grid; grid-template-columns: minmax(110px, 30%) 1fr; gap: 10px; }
+.kv .k { color: var(--muted); }
+.kv .v, .tx, .sl { overflow-wrap: anywhere; }
+.sh { font-weight: 600; margin-top: 6px; }
+.sl { padding-left: 18px; color: var(--text); font-size: .93em; position: relative; }
+.sl::before { content: ""; position: absolute; left: 6px; top: .65em; width: 5px; height: 1px; background: var(--muted); }
+.sl.kv { grid-template-columns: minmax(92px, calc(30% - 18px)) 1fr; }
+.links { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.links a { color: var(--accent); }
+
+.notes { margin-top: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+.notes h2 { font-size: 15px; margin: 0 0 6px; }
+.notes [contenteditable] { min-height: 70px; border: 1px dashed var(--border); border-radius: 6px; padding: 8px; outline: none; white-space: pre-wrap; }
+.notes [contenteditable]:empty::before { content: "Click to type notes (included when printing)"; color: var(--muted); }
+footer { color: var(--muted); font-size: 12px; margin: 12px 2px 4px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 14px;
+  border-radius: 6px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.on { opacity: 1; }
+
+@media (max-width: 980px) {
+  main { grid-template-columns: 1fr; }
+  .panel { display: none; }
+  .actions { align-items: flex-start; width: 100%; }
+  .btns, .chips { justify-content: flex-start; }
+}
+@media print {
+  :root, :root[data-theme="dark"] { --bg: #fff; --surface: #fff; --surface-2: #fff; --border: #c9cdd3; --text: #000; --muted: #444;
+    --ok: #1f7a33; --warn: #9a6100; --fail: #b3261e; --info: #2f6fca; --ok-bg: #fff; --warn-bg: #fff; --fail-bg: #fff; --info-bg: #fff; color-scheme: light; }
+  body { font-size: 11px; }
+  .wrap { max-width: none; padding: 0; }
+  .btns, .panel, .toast { display: none !important; }
+  main, .grid { display: block; }
+  .card { break-inside: avoid; min-height: 0; margin-bottom: 8px; background: #fff !important; }
+  .card .ch { break-after: avoid; }
+  .inline { display: block !important; }
+  .notes [contenteditable]:empty { display: none; }
+}
+
+/* customer report: always a white sheet */
+#customer { display: none; }
+body.cust .wrap { display: none; }
+body.cust #customer { display: block; }
+.ctool { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 16px; }
+.sheet { background: #fff; color: #1d2125; max-width: 794px; margin: 0 auto 32px; padding: 48px 56px; box-shadow: 0 2px 16px rgba(0,0,0,.25);
+  font: 13px/1.5 "Segoe UI", system-ui, sans-serif; }
+.sheet h1 { font-size: 22px; margin: 0 0 2px; }
+.sheet .k-sub { color: #5d646d; margin: 0 0 18px; }
+.sheet table.k-dev { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
+.sheet table.k-dev td { padding: 4px 8px; border-bottom: 1px solid #e3e6ea; vertical-align: top; }
+.sheet table.k-dev td:first-child { color: #5d646d; width: 150px; }
+.k-res { border-radius: 6px; padding: 10px 14px; margin-bottom: 18px; font-weight: 600; border: 1px solid; }
+.k-res.ok { background: #e5f4e8; border-color: #9fd3aa; color: #1f6b30; }
+.k-res.bad { background: #fdf1dc; border-color: #ecc77d; color: #7a4d00; }
+.k-area { margin: 0 0 14px; break-inside: avoid; }
+.k-area h2 { font-size: 15px; margin: 0 0 4px; display: flex; gap: 10px; align-items: center; }
+.k-tag { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 1px 7px; border: 1px solid; }
+.k-tag.fail { color: #b3261e; border-color: #b3261e; } .k-tag.warn { color: #9a6100; border-color: #9a6100; }
+.k-area ul { margin: 0; padding-left: 20px; }
+.k-area li { margin: 2px 0; }
+.k-rec { color: #5d646d; margin: 3px 0 0 20px; }
+.sheet h3 { font-size: 14px; margin: 22px 0 6px; }
+.k-notes { min-height: 90px; border: 1px solid #c9cdd3; border-radius: 4px; padding: 8px; outline: none; white-space: pre-wrap; }
+.k-notes:empty::before { content: "Hier Diagnose eintragen oder nach dem Druck handschriftlich ergänzen"; color: #9aa1aa; }
+.k-checks { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 4px; }
+.k-checks span::before { content: ""; display: inline-block; width: 12px; height: 12px; border: 1.5px solid #1d2125; margin-right: 7px; vertical-align: -2px; }
+.k-sign { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 24px; margin-top: 40px; }
+.k-sign div { border-top: 1px solid #1d2125; padding-top: 4px; color: #5d646d; font-size: 12px; }
+.k-foot { margin-top: 28px; color: #7a8089; font-size: 11px; }
+@media (max-width: 700px) { .sheet { padding: 24px 18px; } .k-sign { grid-template-columns: 1fr; } }
+@media print {
+  #customer .ctool { display: none; }
+  body.cust .sheet { box-shadow: none; margin: 0; padding: 0; max-width: none; }
+  body:not(.cust) #customer { display: none !important; }
+  .k-notes:empty::before { content: ""; }
+  @page { size: A4; margin: 14mm 16mm; }
+  body.cust .sheet { font-size: 11.5px; line-height: 1.4; }
+  .sheet h1 { font-size: 19px; }
+  .sheet .k-sub, .sheet table.k-dev, .k-res { margin-bottom: 12px; }
+  .sheet table.k-dev td { padding: 2px 8px; }
+  .k-area { margin-bottom: 9px; }
+  .sheet h3 { margin: 14px 0 5px; }
+  .k-notes { min-height: 70px; }
+  .k-sign { margin-top: 30px; }
+  .k-foot { margin-top: 16px; }
+}
+.k-end { break-inside: avoid; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top" id="top">
+    <div class="big" id="big"></div>
+    <div class="head">
+      <h1 id="headline">StickDoc</h1>
+      <div class="meta" id="meta"></div>
+      <div class="sub" id="device"></div>
+    </div>
+    <div class="actions">
+      <div class="btns">
+        <button class="btn" id="b-theme" type="button">Light mode</button>
+        <button class="btn" id="b-expand" type="button">Show all details</button>
+        <button class="btn" id="b-copy" type="button">Copy summary</button>
+        <button class="btn" id="b-print" type="button">Print / PDF</button>
+        <button class="btn" id="b-cust" type="button">Kundenbericht</button>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+  </header>
+  <div class="flags" id="flags"></div>
+  <main>
+    <section class="grid" id="grid" aria-label="Checks"></section>
+    <aside class="panel" id="panel" aria-live="polite"><p class="empty">Click a card to see the details.</p></aside>
+  </main>
+  <section class="notes">
+    <h2>Technician notes</h2>
+    <div contenteditable="true" id="notes"></div>
+  </section>
+  <footer id="foot"></footer>
+</div>
+<section id="customer" lang="de">
+  <div class="ctool">
+    <button class="btn" id="c-back" type="button">Zurück zum Technikerbericht</button>
+    <button class="btn" id="c-print" type="button">Drucken / PDF</button>
+  </div>
+  <article class="sheet" id="sheet"></article>
+</section>
+<div class="toast" id="toast"></div>
+<script>
+(function () {
+  "use strict";
+  var R = /*__REPORT_JSON__*/null;
+  if (!R) { document.getElementById("headline").textContent = "No report data"; return; }
+
+  var LABEL = { ok: "OK", info: "Info", warn: "Warning", fail: "Problem" };
+  var P = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  var ICONS = {
+    sysinfo: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    usage: '<path d="M22 12h-4l-3 8L9 4l-3 8H2"/>',
+    drives: '<rect x="2" y="13" width="20" height="8" rx="2"/><path d="M5 13l3-9h8l3 9"/><circle cx="17" cy="17" r="1"/>',
+    volumes: '<path d="M21.2 15.9A10 10 0 1 1 8 2.8"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+    temps: '<path d="M14 14.8V4a2 2 0 0 0-4 0v10.8a4 4 0 1 0 4 0z"/>',
+    battery: '<rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2M6 11v2M10 11v2"/>',
+    devices: '<rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+    bluescreens: '<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+    hwevents: '<path d="M13 2L3 14h9l-1 8 10-12h-9z"/>',
+    apps: '<polygon points="7.9 2 16.1 2 22 7.9 22 16.1 16.1 22 7.9 22 2 16.1 2 7.9"/><path d="M15 9l-6 6M9 9l6 6"/>',
+    services: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+    updates: '<path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/>',
+    security: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    network: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>',
+    displays: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M7 21h10"/>'
+  };
+  var BIG = {
+    ok: '<path d="M5 12.5l4.5 4.5L19 7.5" ' + P + ' stroke-width="3"/>',
+    warn: '<path d="M12 5v9M12 19h.01" ' + P + ' stroke-width="3.2"/>',
+    fail: '<path d="M7 7l10 10M17 7L7 17" ' + P + ' stroke-width="3"/>'
+  };
+  function svg(inner, cls, extra) {
+    return '<svg class="' + cls + '" viewBox="0 0 24 24" aria-hidden="true" ' + (extra || P) + '>' + inner + '</svg>';
+  }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined && text !== null) e.textContent = text;
+    return e;
+  }
+
+  // header
+  var head = { ok: "Everything looks fine", warn: "Some things need a look", fail: "Problems found" };
+  document.getElementById("top").classList.add("s-" + R.overall);
+  document.getElementById("big").innerHTML = svg(BIG[R.overall] || BIG.warn, "", 'fill="none"');
+  document.getElementById("headline").textContent = R.headline || head[R.overall];
+  var dev = R.device || {};
+  var name = [dev.maker, dev.model].filter(Boolean).join(" ") || dev.name || "Unknown device";
+  var meta = name + (dev.serial ? "  |  S/N " + dev.serial : "") + (R.rma ? "  |  RMA " + R.rma : "");
+  document.getElementById("meta").textContent = meta;
+  document.getElementById("device").textContent = [dev.short, dev.os, "checked " + R.time].filter(Boolean).join("  |  ");
+  document.title = "StickDoc - " + (R.rma ? R.rma + " - " : "") + name;
+
+  var counts = {};
+  R.checks.forEach(function (c) { var s = c.info ? "info" : c.status; counts[s] = (counts[s] || 0) + 1; });
+  var chips = document.getElementById("chips");
+  [["fail", "problem"], ["warn", "warning"], ["ok", "OK"], ["info", "info"]].forEach(function (p) {
+    var n = counts[p[0]];
+    if (!n) return;
+    var label = p[0] === "ok" ? n + " OK" : n + " " + p[1] + (n > 1 && p[0] !== "info" ? "s" : "");
+    chips.appendChild(el("span", "chip c-" + p[0], label));
+  });
+
+  var flags = document.getElementById("flags");
+  (R.flags || []).forEach(function (f) {
+    var d = el("div", "flag l-" + f.level);
+    d.appendChild(el("b", "", f.level === "info" ? "Note" : "Important"));
+    d.appendChild(el("span", "", f.text));
+    flags.appendChild(d);
+  });
+
+  // details
+  function gaugeClass(g) {
+    if (g.state) return g.state === "ok" ? "" : g.state;
+    if (g.fail !== undefined && g.value >= g.fail) return "fail";
+    if (g.warn !== undefined && g.value >= g.warn) return "warn";
+    return "";
+  }
+  function bar(g) {
+    var b = el("div", "bar");
+    var i = el("i", gaugeClass(g));
+    i.style.width = Math.max(0, Math.min(100, g.value)) + "%";
+    b.appendChild(i);
+    return b;
+  }
+  function details(c) {
+    var box = el("div", "det");
+    box.appendChild(el("p", "lead", c.summary));
+    (c.gauges || []).forEach(function (g) {
+      var row = el("div", "gl");
+      row.appendChild(el("span", "", g.label));
+      row.appendChild(bar(g));
+      row.appendChild(el("span", "v", Math.round(g.value) + "%"));
+      box.appendChild(row);
+    });
+    var list = el("div", "lines");
+    (c.details || []).forEach(function (line) {
+      var sub = /^\s{2,}/.test(line), t = String(line).trim(), m, row;
+      if (!t) return;
+      m = t.match(/^([^:]{1,34}):\s+(.+)$/);
+      if (m && !/^\d{4}-\d\d-\d\d/.test(t)) {
+        row = el("div", "kv" + (sub ? " sl" : ""));
+        row.appendChild(el("span", "k", m[1]));
+        row.appendChild(el("span", "v", m[2]));
+      } else if (!sub && /:$/.test(t)) {
+        row = el("div", "sh", t.slice(0, -1));
+      } else {
+        row = el("div", sub ? "sl" : "tx", t);
+      }
+      list.appendChild(row);
+    });
+    box.appendChild(list);
+    if (c.links && c.links.length) {
+      var l = el("div", "links");
+      c.links.forEach(function (k) {
+        var a = el("a", "", k.label);
+        a.href = encodeURI(k.href);
+        a.target = "_blank";
+        l.appendChild(a);
+      });
+      box.appendChild(l);
+    }
+    return box;
+  }
+
+  // cards
+  var grid = document.getElementById("grid"), panel = document.getElementById("panel");
+  var cards = [];
+  function select(i) {
+    var c = R.checks[i];
+    cards.forEach(function (k, j) { k.classList.toggle("sel", j === i); k.setAttribute("aria-pressed", j === i ? "true" : "false"); });
+    panel.innerHTML = "";
+    var st = c.info ? "info" : c.status;
+    var ph = el("div", "ph st-" + st);
+    ph.innerHTML = svg(ICONS[c.id] || ICONS.sysinfo, "ico");
+    ph.appendChild(el("h2", "", c.title));
+    ph.appendChild(el("span", "badge c-" + st, LABEL[st]));
+    panel.appendChild(ph);
+    panel.appendChild(details(c));
+  }
+  var narrow = window.matchMedia("(max-width: 980px)");
+  R.checks.forEach(function (c, i) {
+    var st = c.info ? "info" : c.status;
+    var card = el("div", "card st-" + st);
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    var h = el("div", "ch");
+    h.innerHTML = svg(ICONS[c.id] || ICONS.sysinfo, "ico");
+    h.appendChild(el("span", "t", c.title));
+    h.appendChild(el("span", "badge c-" + st, LABEL[st]));
+    card.appendChild(h);
+    card.appendChild(el("div", "sum", c.summary));
+    if (c.gauges && c.gauges.length) {
+      var bs = el("div", "bars");
+      bs.appendChild(bar(c.gauges[0]));
+      card.appendChild(bs);
+    }
+    var inl = el("div", "inline");
+    inl.appendChild(details(c));
+    inl.addEventListener("click", function (e) { e.stopPropagation(); });
+    card.appendChild(inl);
+    function act() {
+      if (narrow.matches || document.body.classList.contains("expanded")) card.classList.toggle("open");
+      else select(i);
+    }
+    card.addEventListener("click", act);
+    card.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); } });
+    grid.appendChild(card);
+    cards.push(card);
+  });
+  var first = 0;
+  R.checks.some(function (c, i) { if (c.status === "fail") { first = i; return true; } return false; }) ||
+    R.checks.some(function (c, i) { if (c.status === "warn") { first = i; return true; } return false; });
+  if (R.checks.length) select(first);
+
+  // buttons
+  var root = document.documentElement, themeBtn = document.getElementById("b-theme");
+  function isDark() {
+    var t = root.getAttribute("data-theme");
+    if (t) return t === "dark";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function syncTheme() { themeBtn.textContent = isDark() ? "Light mode" : "Dark mode"; }
+  try { var saved = localStorage.getItem("sd-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  syncTheme();
+  themeBtn.addEventListener("click", function () {
+    var next = isDark() ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("sd-theme", next); } catch (e) {}
+    syncTheme();
+  });
+  var expBtn = document.getElementById("b-expand");
+  expBtn.addEventListener("click", function () {
+    var on = document.body.classList.toggle("expanded");
+    expBtn.textContent = on ? "Hide details" : "Show all details";
+  });
+  document.getElementById("b-print").addEventListener("click", function () { window.print(); });
+
+  var toast = document.getElementById("toast");
+  function say(t) { toast.textContent = t; toast.classList.add("on"); setTimeout(function () { toast.classList.remove("on"); }, 1800); }
+  document.getElementById("b-copy").addEventListener("click", function () {
+    var text = R.summaryText || "";
+    var notes = document.getElementById("notes").innerText.trim();
+    if (notes) text += "\r\n\r\nTechnician notes:\r\n" + notes;
+    function fallback() {
+      var ta = el("textarea");
+      ta.value = text;
+      ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); say("Summary copied"); } catch (e) { say("Copy failed"); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { say("Summary copied"); }, fallback);
+    } else fallback();
+  });
+
+
+  // ---------------------------------------------------------------- customer report (German)
+  var AREA = { sysinfo: "Windows", usage: "Arbeitsspeicher", drives: "Laufwerke (SSD/HDD)", volumes: "Speicherplatz",
+    temps: "Temperaturen", battery: "Akku", devices: "Geräte und Treiber", bluescreens: "Systemabstürze",
+    hwevents: "Hardwarefehler", apps: "Programmabstürze", services: "Windows-Dienste", updates: "Windows-Updates",
+    security: "Sicherheit" };
+  var CAUSE = { hw: "Hardware (Prozessor, Arbeitsspeicher, Mainboard oder Netzteil)", cpu: "Prozessor oder Mainboard",
+    ram: "Arbeitsspeicher", drive: "Laufwerk", gpu: "Grafikkarte oder Grafiktreiber", driver: "ein Treiber" };
+  var COOL = "Lüfter und Kühlkörper reinigen, Wärmeleitpaste prüfen.";
+  function num(n) { return Number(n).toLocaleString("de-DE"); }
+  function times(n) { return n === 1 ? "einmal" : num(n) + "-mal"; }
+  var DRIVE_WHY = {
+    smart_failed: "der Selbsttest des Laufwerks meldet einen bevorstehenden Ausfall",
+    critical: "das Laufwerk meldet einen kritischen Zustand",
+    errors: "Lese- oder Schreibfehler festgestellt",
+    spare_low: "Reserve-Speicherbereiche fast aufgebraucht",
+    sectors: "beschädigte Sektoren gefunden",
+    health: "Windows meldet einen Fehlerzustand"
+  };
+  function custText(f) {
+    var fail = f.level === "fail";
+    switch (f.code) {
+      case "not_activated": return ["Windows ist nicht aktiviert.", "Windows mit gültigem Schlüssel aktivieren."];
+      case "no_gpu_driver": return ["Für die Grafikkarte ist kein Treiber installiert.", "Grafiktreiber des Herstellers installieren."];
+      case "ram_low": return ["Der Arbeitsspeicher war bei der Prüfung zu " + f.pct + " % belegt.", "Weniger Programme gleichzeitig nutzen oder Arbeitsspeicher erweitern."];
+      case "drive":
+        var why = (f.why || []).map(function (w) {
+          if (w.indexOf("worn:") === 0) return "zu " + w.slice(5) + " % abgenutzt";
+          if (w.indexOf("temp:") === 0) return "Temperatur mit " + w.slice(5) + " °C zu hoch";
+          return DRIVE_WHY[w];
+        }).filter(Boolean);
+        return [(f.name || "Laufwerk") + (f.size ? " (" + num(f.size) + " GB)" : "") + ": " + (why.length ? why.join(", ") : "Auffälligkeiten festgestellt") + ".",
+          fail ? "Daten sichern und Laufwerk austauschen." : "Daten sichern und Laufwerk beobachten."];
+      case "drive_predict": return ["Ein Laufwerk kündigt einen baldigen Ausfall an.", "Daten sichern und Laufwerk austauschen."];
+      case "space": return ["Laufwerk " + f.drive + ": ist zu " + f.pct + " % voll, frei sind noch " + num(f.free) + " GB.", "Nicht benötigte Dateien löschen oder auf ein anderes Laufwerk verschieben."];
+      case "fs_health": return ["Das Dateisystem auf Laufwerk " + f.drive + ": hat Fehler.", "Datenträgerprüfung durchführen, vorher Daten sichern."];
+      case "temp_acpi": return ["Das Gerät wird im Inneren bis zu " + f.t + " °C warm.", COOL];
+      case "temp_gpu": return ["Die Grafikkarte wird " + f.t + " °C warm.", COOL];
+      case "throttle": return ["Der Prozessor wurde in den letzten " + f.days + " Tagen " + times(f.n) + " wegen Hitze oder Stromversorgung gebremst.", COOL + " Netzteil prüfen."];
+      case "battery_health": return ["Der Akku hat nur noch " + f.pct + " % seiner ursprünglichen Kapazität" + (f.cycles ? " (" + num(f.cycles) + " Ladezyklen)" : "") + ".",
+          fail ? "Akku austauschen." : "Akkutausch empfohlen, wenn die Laufzeit nicht mehr ausreicht."];
+      case "battery_critical": return ["Der Akku meldet einen kritischen Zustand.", "Akku austauschen."];
+      case "battery_status": return ["Windows meldet einen Fehler am Akku.", "Akku und Netzteil prüfen."];
+      case "device":
+        var what = { hw: "meldet einen Fehler, meist ein Hardwaredefekt", driver: "Treiber fehlt oder ist fehlerhaft", other: "funktioniert nicht richtig" }[f.kind] || "funktioniert nicht richtig";
+        var rec = { hw: "Gerät und Anschluss prüfen, gegebenenfalls austauschen.", driver: "Passenden Treiber installieren." }[f.kind] || "Gerät und Treiber prüfen.";
+        return [f.name + ": " + what + ".", rec];
+      case "bsod":
+        var c = (f.cats || []).map(function (k) { return CAUSE[k]; }).filter(Boolean);
+        return ["Windows ist in den letzten " + f.days + " Tagen " + times(f.n) + " mit einem Bluescreen abgestürzt." + (c.length ? " Wahrscheinliche Ursache: " + c.join(" oder ") + "." : ""),
+          "Arbeitsspeicher und Laufwerk testen, Treiber und BIOS aktualisieren."];
+      case "restarts": return ["Das Gerät hat sich in den letzten " + f.days + " Tagen " + times(f.n) + " unerwartet ausgeschaltet oder neu gestartet" +
+          (f.btn ? ", davon " + times(f.btn) + " durch langes Drücken des Einschaltknopfs" : " (z. B. Stromausfall oder Einfrieren)") + ".", "Netzteil, Akku und Stromversorgung prüfen."];
+      case "whea_fatal": return ["Schwerer Hardwarefehler gemeldet (" + times(f.n) + ").", "Prozessor, Arbeitsspeicher, Mainboard und Netzteil prüfen."];
+      case "whea_corr": return ["Hardwarefehler gemeldet, die automatisch korrigiert wurden (" + times(f.n) + ").", "Beobachten, bei Häufung Hardware prüfen."];
+      case "badblock": return ["Das Laufwerk hat defekte Bereiche (" + times(f.n) + " gemeldet).", "Daten sichern und Laufwerk austauschen."];
+      case "disk_io": return ["Lese- oder Schreibfehler am Laufwerk (" + times(f.n) + ").", "Laufwerk und Kabel prüfen."];
+      case "ntfs": return ["Fehler im Dateisystem (" + times(f.n) + ").", "Datenträgerprüfung durchführen."];
+      case "storage_reset": return ["Das Laufwerk hat nicht mehr reagiert und musste neu angesprochen werden (" + times(f.n) + ").", "Laufwerk, Firmware und Anschluss prüfen."];
+      case "gpu_tdr": return ["Der Grafiktreiber hat nicht mehr reagiert und wurde neu gestartet (" + times(f.n) + ").", "Grafiktreiber aktualisieren, Grafikkarte prüfen."];
+      case "gpu_driver": return ["Fehler im Grafiktreiber (" + times(f.n) + ").", "Grafiktreiber aktualisieren."];
+      case "unexpected_shutdown": return ["Windows wurde unerwartet beendet (" + times(f.n) + ").", "Stromversorgung prüfen."];
+      case "low_vm": return ["Der Arbeitsspeicher war komplett ausgelastet (" + times(f.n) + ").", "Weniger Programme gleichzeitig nutzen oder Arbeitsspeicher erweitern."];
+      case "usb": return ["Fehler an USB-Anschlüssen oder USB-Geräten (" + times(f.n) + ").", "USB-Geräte und Anschlüsse prüfen."];
+      case "boot_fail": return ["Windows konnte nicht starten (" + times(f.n) + ").", "Startlaufwerk und Windows-Installation prüfen."];
+      case "apps": return ["Programme sind in den letzten " + f.days + " Tagen " + times(f.n) + " abgestürzt, am häufigsten " + f.top + ".", "Betroffene Programme aktualisieren oder neu installieren."];
+      case "services": return [f.n + " wichtige Windows-Dienste laufen nicht.", "Windows reparieren lassen."];
+      case "services_failed": return [f.n + " Windows-Dienste konnten nicht starten.", "Betroffene Programme prüfen."];
+      case "updates_old": return ["Das letzte Windows-Update ist " + num(f.days) + " Tage alt.", "Windows aktualisieren."];
+      case "updates_failed": return [times(f.n).charAt(0).toUpperCase() + times(f.n).slice(1) + " ist ein Update fehlgeschlagen.", "Windows Update erneut ausführen."];
+      case "wu_disabled": return ["Windows Update ist ausgeschaltet.", "Windows Update wieder einschalten."];
+      case "threats": return ["Der Virenschutz hat " + f.n + " Bedrohung" + (f.n === 1 ? "" : "en") + " gefunden.", "Vollständigen Virenscan durchführen."];
+      case "no_av": return ["Kein aktiver Virenschutz.", "Virenschutz einschalten."];
+      case "fw_off": return ["Die Firewall ist ausgeschaltet.", "Firewall einschalten."];
+    }
+    return null;
+  }
+  function deDate(t) {
+    var m = /^(\d{4})-(\d\d)-(\d\d)(.*)$/.exec(t || "");
+    return m ? m[3] + "." + m[2] + "." + m[1] + m[4] : t;
+  }
+  function buildCustomer() {
+    var sh = document.getElementById("sheet");
+    sh.innerHTML = "";
+    sh.appendChild(el("h1", "", "Prüfbericht"));
+    sh.appendChild(el("p", "k-sub", "Automatische Geräteprüfung vom " + deDate(R.time) + " Uhr"));
+    var t = el("table", "k-dev");
+    [["Gerät", name], ["Seriennummer", dev.serial], ["RMA-Nummer", R.rma], ["Ausstattung", dev.short], ["Betriebssystem", dev.os]]
+      .forEach(function (r) {
+        if (!r[1]) return;
+        var tr = el("tr");
+        tr.appendChild(el("td", "", r[0]));
+        tr.appendChild(el("td", "", r[1]));
+        t.appendChild(tr);
+      });
+    sh.appendChild(t);
+
+    var groups = {}, order = [];
+    (R.customer || []).forEach(function (f) {
+      var tx = custText(f);
+      if (!tx) return;
+      if (!groups[f.area]) { groups[f.area] = { level: "warn", items: [], recs: [] }; order.push(f.area); }
+      var g = groups[f.area];
+      if (f.level === "fail") g.level = "fail";
+      g.items.push(tx[0]);
+      if (tx[1] && g.recs.indexOf(tx[1]) < 0) g.recs.push(tx[1]);
+    });
+    var ids = R.checks.map(function (c) { return c.id; });
+    order.sort(function (a, b) { return ids.indexOf(a) - ids.indexOf(b); });
+
+    var res = el("div", "k-res " + (order.length ? "bad" : "ok"),
+      order.length ? "Ergebnis: Bei der Prüfung wurden in " + (order.length === 1 ? "einem Bereich" : order.length + " Bereichen") + " Auffälligkeiten festgestellt."
+                   : "Ergebnis: Bei der automatischen Prüfung wurden keine Auffälligkeiten festgestellt.");
+    sh.appendChild(res);
+    order.forEach(function (a) {
+      var g = groups[a], box = el("section", "k-area"), h = el("h2", "", AREA[a] || a);
+      h.appendChild(el("span", "k-tag " + g.level, g.level === "fail" ? "Problem" : "Hinweis"));
+      box.appendChild(h);
+      var ul = el("ul");
+      g.items.forEach(function (i) { ul.appendChild(el("li", "", i)); });
+      box.appendChild(ul);
+      g.recs.forEach(function (r) { box.appendChild(el("p", "k-rec", "Empfehlung: " + r)); });
+      sh.appendChild(box);
+    });
+
+    var end = el("div", "k-end");
+    end.appendChild(el("h3", "", "Diagnose / Bemerkung"));
+    var n = el("div", "k-notes");
+    n.contentEditable = "true";
+    n.id = "k-notes";
+    end.appendChild(n);
+    end.appendChild(el("h3", "", "Ergebnis"));
+    var ck = el("div", "k-checks");
+    ["Fehler bestätigt", "Kein Fehler festgestellt", "Siehe Bemerkung"].forEach(function (x) { ck.appendChild(el("span", "", x)); });
+    end.appendChild(ck);
+    var sg = el("div", "k-sign");
+    ["Datum", "Techniker", "Unterschrift"].forEach(function (x) { sg.appendChild(el("div", "", x)); });
+    end.appendChild(sg);
+    sh.appendChild(end);
+    end.appendChild(el("p", "k-foot", "Automatische Prüfung mit " + R.tool + " " + R.version + ". Ausgewertet wurden der Zustand der Hardware und die Windows-Protokolle der letzten " +
+      R.days + " Tage. Am Gerät wurde dabei nichts verändert. Aufgeführt sind nur Bereiche mit Auffälligkeiten."));
+  }
+  buildCustomer();
+  document.getElementById("b-cust").addEventListener("click", function () { document.body.classList.add("cust"); window.scrollTo(0, 0); });
+  document.getElementById("c-back").addEventListener("click", function () { document.body.classList.remove("cust"); });
+  document.getElementById("c-print").addEventListener("click", function () { window.print(); });
+
+  var foot = document.getElementById("foot");
+  [R.tool + " " + R.version, "events from the last " + R.days + " days",
+   R.admin ? "run as administrator" : "run WITHOUT administrator rights", "read-only check, nothing was changed"]
+    .forEach(function (t) { foot.appendChild(el("span", "", t)); });
+})();
+</script>
+</body>
+</html>
